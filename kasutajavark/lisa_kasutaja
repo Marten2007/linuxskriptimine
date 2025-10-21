@@ -1,0 +1,29 @@
+#!/bin/bash
+# Skript kasutaja lisamiseks käsurea argumendiga
+
+# Kontroll, kas skripti käivitatakse root kasutajana
+if [ "$EUID" -ne 0 ]; then
+  echo "❌ Ainult root saab kasutajaid lisada!"
+  exit 1
+fi
+
+# Kontroll, kas argument on olemas
+if [ -z "$1" ]; then
+  echo "Kasutamine: $0 <kasutajanimi>"
+  exit 1
+fi
+
+kasutaja=$1
+
+# Kontrolli, kas kasutaja juba eksisteerib
+if id "$kasutaja" &>/dev/null; then
+  echo "Kasutaja '$kasutaja' on juba olemas!"
+  exit 1
+fi
+
+# Loo kasutaja kodukataloogiga
+useradd -m "$kasutaja"
+
+# Kontrolli tulemus
+echo "Kasutaja '$kasutaja' loodud!"
+grep "$kasutaja" /etc/passwd
