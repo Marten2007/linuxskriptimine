@@ -1,0 +1,27 @@
+#!/bin/bash
+# Skript, mis loeb kasutajanimed failist ja lisab need süsteemi
+
+# Kontroll, kas skripti käivitab root
+if [ "$EUID" -ne 0 ]; then
+  echo "Ainult root saab skripti käivitada!"
+  exit 1
+fi
+
+# Kontroll, kas failinimi on antud
+if [ -z "$1" ]; then
+  echo "Kasutamine: $0 <failinimi>"
+  exit 1
+fi
+
+fail=$1
+
+# Kontroll, kas fail eksisteerib
+if [ ! -f "$fail" ]; then
+  echo "Faili '$fail' ei leitud!"
+  exit 1
+fi
+
+# Iga rea lugemine failist ja kasutaja lisamine
+while read -r kasutaja; do
+  ./lisa_kasutaja "$kasutaja"
+done < "$fail"
