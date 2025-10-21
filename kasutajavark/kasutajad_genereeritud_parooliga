@@ -1,0 +1,33 @@
+#!/bin/bash
+# Kasutajad failist ja paroolide genereerimine
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Ainult root võib skripti käivitada!"
+  exit 1
+fi
+
+if [ -z "$1" ]; then
+  echo "Kasutamine: $0 <kasutajad_fail>"
+  exit 1
+fi
+
+fail=$1
+logifail="loodud_kasutajad_paroolidega.log"
+
+# Kontrolli, kas pwgen on olemas
+if ! command -v pwgen &> /dev/null; then
+  echo "pwgen puudub, paigaldan..."
+  apt install pwgen -y
+fi
+
+> "$logifail"
+
+while read -r kasutaja; do
+  parool=$(pwgen 8 1)
+  useradd -m "$kasutaja"
+  echo "$kasutaja:$parool" | chpasswd
+  echo "$kasutaja:$parool" >> "$logifail"
+  echo "Lisatud kasutaja: $kasutaja"
+done < "$fail"
+
+echo "Kõik kasutajad lisatud. Logifail: $logifail"
