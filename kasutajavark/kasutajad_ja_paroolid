@@ -1,0 +1,21 @@
+#!/bin/bash
+# Skript, mis loeb kahest failist kasutajad ja paroolid
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Ainult root võib skripti käivitada!"
+  exit 1
+fi
+
+if [ "$#" -ne 2 ]; then
+  echo "Kasutamine: $0 <kasutajad_fail> <paroolid_fail>"
+  exit 1
+fi
+
+kasfail=$1
+parfail=$2
+
+paste "$kasfail" "$parfail" | while IFS=$'\t' read -r kasutaja parool; do
+  useradd -m "$kasutaja"
+  echo "$kasutaja:$parool" | chpasswd
+  echo "Lisatud kasutaja: $kasutaja"
+done
