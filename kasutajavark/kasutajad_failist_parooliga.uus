@@ -1,0 +1,70 @@
+# Kontroll, et ainult root saab skripti käivitada
+if [ "$EUID" -ne 0 ]; then
+  echo "Skripti saab käivitada ainult root kasutaja!"
+  exit 1
+fi
+
+# Kontroll, et skripti ei käivitata sudo kaudu
+if [ -n "$SUDO_USER" ]; then
+  echo "Skripti ei tohi käivitada sudo kaudu — logi sisse root kasutajana (su -)"
+  exit 1
+fi
+
+# kasutajad_failist_parooliga
+# Lisab kasutajad failist, kus iga rida on kasutaja:parool
+
+# NB: käivita ainult root'ina (ilma sudo kaudu käivitamise piiranguta saab lisada Ülesanne 6-s)
+if [ "$EUID" -ne 0 ]; then
+  echo "Ainult root võib skripti käivitada!"
+  exit 1
+fi
+
+# kontroll argumendi olemasolu
+if [ -z "$1" ]; then
+  echo "Kasutamine: $0 <failinimi>"
+  exit 1
+fi
+
+fail="$1"
+
+# kontroll, et fail eksisteerib
+if [ ! -f "$fail" ]; then
+  echo "Faili '$fail' ei leitud!"
+  exit 1
+fi
+
+# piirame faili loetakse ainult vajalikult (turvalisus)
+chmod 600 "$fail"
+
+# Loe fail rida-realt
+while IFS=':' read -r kasutaja parool; do
+  # kui rida tühi või kommentaar, liigume edasi
+  [ -z "$kasutaja" ] && continue
+  case "$kasutaja" in \#*) continue;; esac
+
+  # kui kasutaja juba olemas, hoiatame ja liigume edasi
+  if id "$kasutaja" &>/dev/null; then
+    echo "Kasutaja '$kasutaja' juba olemas — jätan vahele."
+    continue
+  fi
+
+  # loo kasutaja koos kodukataloogiga
+  useradd -m "$kasutaja"
+  if [ $? -ne 0 ]; then
+    echo "Kasutaja '$kasutaja' loomine ebaõnnestus!"
+    continue
+  fi
+
+  # määra parool chpasswd abil
+  echo "${kasutaja}:${parool}" | chpasswd
+  if [ $? -ne 0 ]; then
+    echo "Parooli määramine kasutajale '$kasutaja' ebaõnnestus!"
+    # kui tahad, siis eemaldame viga saanud kasutaja:
+    # userdel -r "$kasutaja"
+    continue
+  fi
+
+  echo "Lisatud: $kasutaja"
+done < "$fail"
+
+echo "Kõik read töödeldud."
